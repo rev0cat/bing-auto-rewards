@@ -785,14 +785,21 @@ def create_chrome_options():
     chrome_options.add_argument('--allow-running-insecure-content')
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     
+    # 在GitHub Actions环境中添加额外选项
+    if os.getenv('GITHUB_ACTIONS'):
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-software-rasterizer')
+        chrome_options.add_argument('--disable-background-timer-throttling')
+        chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+        chrome_options.add_argument('--disable-renderer-backgrounding')
+        chrome_options.add_argument('--disable-features=TranslateUI')
+        chrome_options.add_argument('--disable-ipc-flooding-protection')
+    
     if HEADLESS:
         chrome_options.add_argument('--headless=new')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
         chrome_options.add_argument('--remote-debugging-port=9222')
-        chrome_options.add_argument('--disable-background-timer-throttling')
-        chrome_options.add_argument('--disable-backgrounding-occluded-windows')
-        chrome_options.add_argument('--disable-renderer-backgrounding')
     
     return chrome_options
 
