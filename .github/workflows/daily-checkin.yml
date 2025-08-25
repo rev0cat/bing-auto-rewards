@@ -35,19 +35,29 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
         
-        # 安装ChromeDriver
-        CHROME_VERSION=$(google-chrome --version | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
-        echo "Chrome version: $CHROME_VERSION"
+        # 获取Chrome版本并安装兼容的ChromeDriver
+        CHROME_VERSION=$(google-chrome --version | grep -oE "[0-9]+\.[0-9]+")
+        echo "Chrome major version: $CHROME_VERSION"
         
-        # 下载对应版本的ChromeDriver
-        wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION"
-        CHROMEDRIVER_VERSION=$(cat /tmp/chromedriver.zip)
-        wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+        # 使用更兼容的方法安装ChromeDriver
+        # 方法1: 尝试从官方源下载
+        if wget -q --spider "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION"; then
+          echo "Official ChromeDriver available for version $CHROME_VERSION"
+          wget -O /tmp/chromedriver_version "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION"
+          CHROMEDRIVER_VERSION=$(cat /tmp/chromedriver_version)
+          wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+        else
+          echo "Official ChromeDriver not available, using fallback method"
+          # 方法2: 使用apt安装
+          sudo apt-get install -y chromium-chromedriver
+          sudo ln -sf /usr/bin/chromedriver /usr/local/bin/chromedriver
+          exit 0
+        fi
         
         # 解压并安装
         unzip /tmp/chromedriver.zip -d /usr/local/bin/
         chmod +x /usr/local/bin/chromedriver
-        rm /tmp/chromedriver.zip
+        rm /tmp/chromedriver.zip /tmp/chromedriver_version
         
     - name: Verify Chrome and ChromeDriver
       run: |
