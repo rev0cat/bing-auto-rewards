@@ -41,7 +41,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r src/requirements.txt
+        pip install -r requirements.txt
         
     - name: Create config directory
       run: mkdir -p config
@@ -53,7 +53,6 @@ jobs:
         
     - name: Run Bing automation
       run: |
-        cd src
         python bingZDH.py --once
         
     - name: Upload logs
@@ -62,6 +61,6 @@ jobs:
       with:
         name: bing-logs
         path: |
-          src/*.log
-          src/*.png
+          *.log
+          *.png
         retention-days: 7
