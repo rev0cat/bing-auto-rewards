@@ -15,6 +15,8 @@ jobs:
     env:
       PYTHONUNBUFFERED: 1  # 确保Python输出不被缓存
       DISPLAY: :99  # 为无头模式设置显示
+      CHROME_BIN: /usr/bin/google-chrome  # Chrome路径
+      CHROMEDRIVER_PATH: /usr/local/bin/chromedriver  # ChromeDriver路径
     
     steps:
     - name: Checkout code
@@ -25,18 +27,36 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install Chrome
+    - name: Install Chrome and ChromeDriver
       run: |
-        # 使用更现代的Chrome安装方法
+        # 安装Chrome
         curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
         echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
         
-    - name: Verify Chrome installation
+        # 安装ChromeDriver
+        CHROME_VERSION=$(google-chrome --version | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
+        echo "Chrome version: $CHROME_VERSION"
+        
+        # 下载对应版本的ChromeDriver
+        wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION"
+        CHROMEDRIVER_VERSION=$(cat /tmp/chromedriver.zip)
+        wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+        
+        # 解压并安装
+        unzip /tmp/chromedriver.zip -d /usr/local/bin/
+        chmod +x /usr/local/bin/chromedriver
+        rm /tmp/chromedriver.zip
+        
+    - name: Verify Chrome and ChromeDriver
       run: |
         google-chrome --version
         which google-chrome
+        chromedriver --version
+        which chromedriver
+        echo "Chrome binary: $CHROME_BIN"
+        echo "ChromeDriver path: $CHROMEDRIVER_PATH"
         
     - name: Install dependencies
       run: |
