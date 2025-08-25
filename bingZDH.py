@@ -794,6 +794,52 @@ def create_chrome_options():
         chrome_options.add_argument('--disable-renderer-backgrounding')
         chrome_options.add_argument('--disable-features=TranslateUI')
         chrome_options.add_argument('--disable-ipc-flooding-protection')
+        chrome_options.add_argument('--disable-setuid-sandbox')
+        chrome_options.add_argument('--disable-accelerated-2d-canvas')
+        chrome_options.add_argument('--disable-accelerated-jpeg-decoding')
+        chrome_options.add_argument('--disable-accelerated-mjpeg-decode')
+        chrome_options.add_argument('--disable-accelerated-video-decode')
+        chrome_options.add_argument('--disable-gpu-sandbox')
+        chrome_options.add_argument('--disable-software-rasterizer')
+        chrome_options.add_argument('--disable-threaded-animation')
+        chrome_options.add_argument('--disable-threaded-scrolling')
+        chrome_options.add_argument('--disable-checker-imaging')
+        chrome_options.add_argument('--disable-new-tab-first-run')
+        chrome_options.add_argument('--disable-default-apps')
+        chrome_options.add_argument('--disable-sync')
+        chrome_options.add_argument('--disable-translate')
+        chrome_options.add_argument('--disable-web-resources')
+        chrome_options.add_argument('--disable-client-side-phishing-detection')
+        chrome_options.add_argument('--disable-component-update')
+        chrome_options.add_argument('--disable-domain-reliability')
+        chrome_options.add_argument('--disable-features=VizDisplayCompositor')
+        chrome_options.add_argument('--disable-hang-monitor')
+        chrome_options.add_argument('--disable-prompt-on-repost')
+        chrome_options.add_argument('--disable-renderer-backgrounding')
+        chrome_options.add_argument('--disable-session-crashed-bubble')
+        chrome_options.add_argument('--disable-single-click-autofill')
+        chrome_options.add_argument('--disable-tab-for-desktop-share')
+        chrome_options.add_argument('--disable-usb-keyboard-detect')
+        chrome_options.add_argument('--disable-web-security')
+        chrome_options.add_argument('--no-first-run')
+        chrome_options.add_argument('--no-default-browser-check')
+        chrome_options.add_argument('--no-zygote')
+        chrome_options.add_argument('--single-process')
+        chrome_options.add_argument('--disable-background-networking')
+        chrome_options.add_argument('--disable-background-timer-throttling')
+        chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+        chrome_options.add_argument('--disable-breakpad')
+        chrome_options.add_argument('--disable-component-extensions-with-background-pages')
+        chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees')
+        chrome_options.add_argument('--disable-ipc-flooding-protection')
+        chrome_options.add_argument('--disable-renderer-backgrounding')
+        chrome_options.add_argument('--disable-sync-preferences')
+        chrome_options.add_argument('--force-color-profile=srgb')
+        chrome_options.add_argument('--metrics-recording-only')
+        chrome_options.add_argument('--no-report-upload')
+        chrome_options.add_argument('--disable-background-timer-throttling')
+        chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+        chrome_options.add_argument('--disable-renderer-backgrounding')
     
     if HEADLESS:
         chrome_options.add_argument('--headless=new')
@@ -806,10 +852,6 @@ def create_chrome_options():
 def process_account_group(group_name, accounts, search_words):
     """处理一个账号组（一个浏览器处理多个账号）"""
     logger.info(f"=== 开始处理账号组 {group_name} ===")
-    
-    # 配置Chrome选项
-    chrome_options = create_chrome_options()
-    logger.info(f"账号组 {group_name} Chrome选项配置完成")
     
     driver = None
     try:
@@ -830,6 +872,9 @@ def process_account_group(group_name, accounts, search_words):
                 
                 def create_driver():
                     try:
+                        # 为每个group创建新的Chrome选项，避免重用问题
+                        chrome_options = create_chrome_options()
+                        
                         # 为每个group使用不同的用户数据目录，避免冲突
                         import tempfile
                         import os
@@ -898,6 +943,12 @@ def process_account_group(group_name, accounts, search_words):
                             logger.info(f"账号组 {group_name} 第{attempt+1}次尝试重新启动Chrome...")
                             # 创建新的Chrome选项对象
                             new_chrome_options = create_chrome_options()
+                            # 为重新创建的driver也使用独立的用户数据目录
+                            import tempfile
+                            temp_dir = tempfile.mkdtemp(prefix=f"chrome_group_{group_name}_retry_{attempt}_")
+                            new_chrome_options.add_argument(f'--user-data-dir={temp_dir}')
+                            new_chrome_options.add_argument(f'--remote-debugging-port={9222 + hash(group_name) % 1000 + attempt}')
+                            
                             driver = uc.Chrome(options=new_chrome_options, version_main=138)
                             logger.info(f"账号组 {group_name} Chrome浏览器重新启动成功！")
                             break
