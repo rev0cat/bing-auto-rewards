@@ -86,6 +86,31 @@ def get_chrome_version_main():
     logger.info("无法确定Chrome主版本号，将使用undetected_chromedriver默认匹配")
     return None
 
+def load_account_groups():
+    """加载账号配置，优先读取环境变量ACCOUNTS_CONFIG，其次读取本地文件"""
+    env_accounts = os.getenv("ACCOUNTS_CONFIG")
+    if env_accounts:
+        try:
+            account_groups = json.loads(env_accounts)
+            logger.info("已从环境变量 ACCOUNTS_CONFIG 加载账号配置")
+            return account_groups
+        except json.JSONDecodeError as e:
+            logger.error(f"环境变量 ACCOUNTS_CONFIG JSON解析失败: {e}")
+            raise
+
+    possible_files = [
+        os.path.join("config", "accounts.json"),
+        "accounts.json",
+    ]
+
+    for path in possible_files:
+        if os.path.exists(path):
+            logger.info(f"从本地文件 {path} 加载账号配置")
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+
+    raise FileNotFoundError("未找到账号配置，请设置环境变量 ACCOUNTS_CONFIG 或提供 accounts.json")
+
 # ========== 工具函数 ==========
 def check_driver_connection(driver, group_name):
     """检查WebDriver连接是否正常"""
@@ -1050,7 +1075,11 @@ def process_account_group(group_name, accounts, search_words):
                             new_chrome_options.add_argument(f'--user-data-dir={temp_dir}')
                             new_chrome_options.add_argument(f'--remote-debugging-port={9222 + hash(group_name) % 1000 + attempt}')
                             
-                            driver = uc.Chrome(options=new_chrome_options, version_main=138)
+                            if chrome_version_main:
+                                logger.info(f"使用Chrome主版本号 {chrome_version_main} 重新启动浏览器")
+                                driver = uc.Chrome(options=new_chrome_options, version_main=chrome_version_main)
+                            else:
+                                driver = uc.Chrome(options=new_chrome_options)
                             logger.info(f"账号组 {group_name} Chrome浏览器重新启动成功！")
                             break
                         except Exception as e2:
@@ -1080,9 +1109,8 @@ def process_account_group(group_name, accounts, search_words):
 
 def main():
     logger.info("=== 程序开始执行 ===")
-    logger.info("正在读取账号配置文件...")
-    with open('accounts.json', 'r', encoding='utf-8') as f:
-        account_groups = json.load(f)
+    logger.info("正在加载账号配置...")
+    account_groups = load_account_groups()
     
     total_accounts = sum(len(accounts) for accounts in account_groups.values())
     logger.info(f"成功读取到 {len(account_groups)} 个账号组，共 {total_accounts} 个账号")

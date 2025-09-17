@@ -17,6 +17,7 @@ jobs:
       DISPLAY: :99  # 为无头模式设置显示
       CHROME_BIN: /usr/bin/google-chrome  # Chrome路径
       CHROMEDRIVER_PATH: /usr/local/bin/chromedriver  # ChromeDriver路径
+      ACCOUNTS_CONFIG: ${{ secrets.ACCOUNTS_CONFIG }}
     
     steps:
     - name: Checkout code
@@ -72,14 +73,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
-    - name: Create config directory
-      run: mkdir -p config
-      
-    - name: Setup accounts configuration
-      run: |
-        # 从GitHub Secrets读取账号配置
-        echo '${{ secrets.ACCOUNTS_CONFIG }}' > config/accounts.json
         
     - name: Run Bing automation
       run: |

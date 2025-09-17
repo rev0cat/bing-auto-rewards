@@ -18,10 +18,10 @@ git clone https://github.com/你的用户名/bing-auto-rewards.git
 cd bing-auto-rewards
 
 # 复制项目文件到仓库目录
-# 确保包含以下文件：
+# 确保包含以下文件（账号配置将在Secrets中设置，无需提交accounts.json）：
 # - .github/workflows/daily-checkin.yml
-# - src/bingZDH.py
-# - src/requirements.txt
+# - bingZDH.py
+# - requirements.txt
 # - README.md
 # - .gitignore
 
@@ -43,9 +43,9 @@ git push origin main
 3. 左侧菜单选择 "Secrets and variables" → "Actions"
 4. 点击 "New repository secret"
 5. 名称填写：`ACCOUNTS_CONFIG`
-6. 值填写你的账号配置JSON（注意格式要正确）
+6. 值填写你的账号配置JSON（注意格式要正确）。运行时脚本会直接从该Secret对应的环境变量中读取账号信息。
 
-### 账号配置示例：
+### 账号配置示例（存放在Secret中）：
 ```json
 {
   "group1": [
@@ -95,9 +95,10 @@ git push origin main
 - 确保Python版本兼容（推荐3.9）
 
 ### 常见问题3: 账号配置错误
-- 检查JSON格式是否正确
-- 确保账号密码没有特殊字符
+- 检查JSON格式是否正确（建议使用JSON校验工具）
+- 确保账号密码没有特殊字符或已经正确转义
 - 验证账号是否有效
+- 确认仓库Secrets中的`ACCOUNTS_CONFIG`已设置且未过期
 
 ### 常见问题4: 执行超时
 - GitHub Actions有6小时执行时间限制
