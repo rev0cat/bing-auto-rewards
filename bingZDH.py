@@ -228,7 +228,7 @@ def robust_wait_and_click(driver, by, value, timeout=WAIT_TIMEOUT, retries=RETRY
             else:
                 # 最后一次尝试，截图保存
                 try:
-                    screenshot_name = f"click_fail_{by}_{value.replace('/', '_').replace(':', '_')}_{int(time.time())}.png"
+                    screenshot_name = f"click_fail.png"
                     driver.save_screenshot(screenshot_name)
                     logger.info(f"点击失败截图已保存: {screenshot_name}")
                 except Exception as screenshot_error:
