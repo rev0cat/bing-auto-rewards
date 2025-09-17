@@ -111,6 +111,53 @@ def load_account_groups():
 
     raise FileNotFoundError("未找到账号配置，请设置环境变量 ACCOUNTS_CONFIG 或提供 accounts.json")
 
+
+def log_password_debug_info(driver, group_name, email):
+    """在无法找到密码输入框时采集调试信息"""
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    logger.error(f"[Debug] 密码输入框未找到 - 账号组: {group_name}, 邮箱: {email}")
+    try:
+        logger.error(f"[Debug] 当前URL: {driver.current_url}")
+    except Exception as e:
+        logger.warning(f"[Debug] 获取当前URL失败: {e}")
+    try:
+        logger.error(f"[Debug] 页面标题: {driver.title}")
+    except Exception as e:
+        logger.warning(f"[Debug] 获取页面标题失败: {e}")
+
+    # 收集输入框信息，避免过多日志只显示前10个
+    try:
+        inputs = driver.find_elements(By.TAG_NAME, "input")
+        logger.error(f"[Debug] 页面输入框数量: {len(inputs)}")
+        for idx, element in enumerate(inputs[:10]):
+            attrs = {
+                "type": element.get_attribute("type"),
+                "name": element.get_attribute("name"),
+                "id": element.get_attribute("id"),
+                "aria-label": element.get_attribute("aria-label"),
+                "placeholder": element.get_attribute("placeholder"),
+                "data-testid": element.get_attribute("data-testid"),
+            }
+            logger.error(f"[Debug] 输入框[{idx}] 属性: {attrs}")
+    except Exception as e:
+        logger.warning(f"[Debug] 收集输入框信息失败: {e}")
+
+    # 输出页面源码片段，最多2000字符
+    try:
+        page_source = driver.page_source
+        snippet = page_source[:2000]
+        logger.error("[Debug] 页面源码片段(前2000字符):\n" + snippet)
+    except Exception as e:
+        logger.warning(f"[Debug] 获取页面源码失败: {e}")
+
+    # 保存截图便于排查
+    try:
+        screenshot_name = f"password_debug_{group_name}_{timestamp}.png"
+        driver.save_screenshot(screenshot_name)
+        logger.error(f"[Debug] 已保存调试截图: {screenshot_name}")
+    except Exception as e:
+        logger.warning(f"[Debug] 保存调试截图失败: {e}")
+
 # ========== 工具函数 ==========
 def check_driver_connection(driver, group_name):
     """检查WebDriver连接是否正常"""
@@ -521,7 +568,8 @@ def login_bing(driver, email, password, idx, group_name=None):
             raise Exception("未找到密码输入框")
     except Exception as e:
         logger.error("未找到密码输入框")
-        raise Exception("未找到密码输入框")
+        log_password_debug_info(driver, group_name, email)
+        raise Exception("未找到密码输入框") from e
     password_input.clear()
     password_input.send_keys(password)
     # 尝试点击登录/下一个按钮
