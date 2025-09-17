@@ -17,7 +17,7 @@ jobs:
       DISPLAY: :99  # 为无头模式设置显示
       CHROME_BIN: /usr/bin/google-chrome  # Chrome路径
       CHROMEDRIVER_PATH: /usr/local/bin/chromedriver  # ChromeDriver路径
-      ACCOUNTS_CONFIG: ${{ secrets.ACCOUNTS_CONFIG }}
+      ACCOUNTS_CONFIG: ${{ secrets.MSFT_ACCOUNT }}
     
     steps:
     - name: Checkout code
