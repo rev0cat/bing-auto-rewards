@@ -3,6 +3,7 @@ import time
 import logging
 import random
 import re
+import subprocess
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -43,6 +44,47 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# ========== 版本检测 ==========
+def get_chrome_version_main():
+    """检测Chrome主版本号，优先使用环境变量，失败则尝试系统命令"""
+    env_version = os.getenv("CHROME_VERSION_MAIN")
+    if env_version:
+        match = re.search(r"(\d+)", env_version)
+        if match:
+            version = int(match.group(1))
+            logger.info(f"使用环境变量指定的Chrome主版本号: {version}")
+            return version
+        logger.warning(f"环境变量 CHROME_VERSION_MAIN 无法解析: {env_version}")
+
+    version_output = None
+    possible_commands = [
+        ["google-chrome", "--version"],
+        ["chromium-browser", "--version"],
+        ["chromium", "--version"],
+        ["/usr/bin/google-chrome", "--version"],
+        ["/usr/bin/chromium-browser", "--version"],
+        ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "--version"],
+    ]
+
+    for command in possible_commands:
+        try:
+            output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+            version_output = output.decode().strip()
+            break
+        except Exception:
+            continue
+
+    if version_output:
+        match = re.search(r"(\d+)\.", version_output)
+        if match:
+            version = int(match.group(1))
+            logger.info(f"自动检测到Chrome主版本号: {version} (来自: {version_output})")
+            return version
+        logger.warning(f"无法从版本信息解析Chrome主版本号: {version_output}")
+
+    logger.info("无法确定Chrome主版本号，将使用undetected_chromedriver默认匹配")
+    return None
 
 # ========== 工具函数 ==========
 def check_driver_connection(driver, group_name):
@@ -854,6 +896,7 @@ def process_account_group(group_name, accounts, search_words):
     logger.info(f"=== 开始处理账号组 {group_name} ===")
     
     driver = None
+    chrome_version_main = get_chrome_version_main()
     try:
         logger.info(f"正在启动账号组 {group_name} 的Chrome浏览器...")
         logger.info("注意: 首次启动可能需要几分钟时间...")
@@ -881,8 +924,12 @@ def process_account_group(group_name, accounts, search_words):
                         temp_dir = tempfile.mkdtemp(prefix=f"chrome_group_{group_name}_")
                         chrome_options.add_argument(f'--user-data-dir={temp_dir}')
                         chrome_options.add_argument(f'--remote-debugging-port={9222 + hash(group_name) % 1000}')
-                        
-                        driver_result['driver'] = uc.Chrome(options=chrome_options, version_main=138)
+
+                        if chrome_version_main:
+                            logger.info(f"使用Chrome主版本号 {chrome_version_main} 启动浏览器")
+                            driver_result['driver'] = uc.Chrome(options=chrome_options, version_main=chrome_version_main)
+                        else:
+                            driver_result['driver'] = uc.Chrome(options=chrome_options)
                         logger.info(f"账号组 {group_name} Chrome浏览器启动成功！")
                     except Exception as e:
                         logger.error(f"账号组 {group_name} ChromeDriver创建失败: {e}")
@@ -948,8 +995,12 @@ def process_account_group(group_name, accounts, search_words):
                             temp_dir = tempfile.mkdtemp(prefix=f"chrome_group_{group_name}_retry_{attempt}_")
                             new_chrome_options.add_argument(f'--user-data-dir={temp_dir}')
                             new_chrome_options.add_argument(f'--remote-debugging-port={9222 + hash(group_name) % 1000 + attempt}')
-                            
-                            driver = uc.Chrome(options=new_chrome_options, version_main=138)
+
+                            if chrome_version_main:
+                                logger.info(f"使用Chrome主版本号 {chrome_version_main} 重新启动浏览器")
+                                driver = uc.Chrome(options=new_chrome_options, version_main=chrome_version_main)
+                            else:
+                                driver = uc.Chrome(options=new_chrome_options)
                             logger.info(f"账号组 {group_name} Chrome浏览器重新启动成功！")
                             break
                         except Exception as e:
